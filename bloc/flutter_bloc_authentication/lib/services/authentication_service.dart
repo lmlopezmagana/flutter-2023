@@ -59,6 +59,7 @@ class JwtAuthenticationService extends AuthenticationService {
   @override
   Future<User?> getCurrentUser() async {
     //String? loggedUser = _localStorageService.getFromDisk("user");
+    print("get current user");
     String? token = _localStorageService.getFromDisk("user_token");
     if (token != null) {
       UserResponse response = await _userRepository.me();
@@ -77,6 +78,7 @@ class JwtAuthenticationService extends AuthenticationService {
 
   @override
   Future<void> signOut() async {
+    print("borrando token");
     await _localStorageService.deleteFromDisk("user_token");
   }
 

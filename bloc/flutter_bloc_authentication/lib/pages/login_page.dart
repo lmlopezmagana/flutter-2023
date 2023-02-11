@@ -19,13 +19,14 @@ class LoginPage extends StatelessWidget {
               if (state is AuthenticationNotAuthenticated) {
                 return _AuthForm();
               }
-              if (state is AuthenticationFailure) {
+              if (state is AuthenticationFailure || state is SessionExpiredState) {
+                var msg = (state as AuthenticationFailure).message;
                 return Center(
                     child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Text(state.message),
+                    Text(msg),
                     TextButton(
                       //textColor: Theme.of(context).primaryColor,
                       child: Text('Retry'),

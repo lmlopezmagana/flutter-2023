@@ -3,7 +3,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc_authentication/config/locator.dart';
+import 'package:flutter_bloc_authentication/main.dart';
 import 'package:flutter_bloc_authentication/services/localstorage_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http_interceptor/http_interceptor.dart';
@@ -186,7 +188,15 @@ class AuthorizationInterceptor implements InterceptorContract {
   }
 
   @override
-  Future<ResponseData> interceptResponse({required ResponseData data}) {
+  Future<ResponseData> interceptResponse({required ResponseData data}) async {
+    
+    if (data.statusCode == 401 || data.statusCode == 403) {
+      Future.delayed(Duration(seconds: 1), () {
+        Navigator.of(GlobalContext.ctx).push<void>(MyApp.route());
+      });
+    }
+    
+    
     return Future.value(data);
   }
 
