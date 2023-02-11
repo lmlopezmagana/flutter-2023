@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc_authentication/rest/rest_client.dart';
 
 import 'authentication_event.dart';
 import 'authentication_state.dart';
@@ -31,6 +32,9 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
         } else {
           emit(AuthenticationNotAuthenticated());
         }
+      } on UnauthorizedException catch (e) {
+        print(e);
+        emit(AuthenticationNotAuthenticated());  
       } on Exception catch (e) {
         emit(AuthenticationFailure(message: 'An unknown error occurred: ${e.toString()}'));
       }
