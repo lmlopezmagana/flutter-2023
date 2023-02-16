@@ -6,6 +6,7 @@ abstract class AuthenticationState extends Equatable {
 
   @override
   List<Object> get props => [];
+
 }
 
 class AuthenticationInitial extends AuthenticationState {}
@@ -30,4 +31,16 @@ class AuthenticationFailure extends AuthenticationState {
 
   @override
   List<Object> get props => [message];
+
+}
+
+class SessionExpiredState extends AuthenticationFailure {
+
+  SessionExpiredState() : super(message: 'Session expired. Please login again');
+
+  String get message => super.message;
+  
+@override
+List<Object> get props => [message];
+
 }

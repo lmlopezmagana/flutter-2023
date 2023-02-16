@@ -3,6 +3,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc_authentication/config/locator.dart';
+import 'package:flutter_bloc_authentication/main.dart';
+import 'package:flutter_bloc_authentication/services/localstorage_service.dart';
+import 'package:get_it/get_it.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:injectable/injectable.dart';
 import 'package:http/http.dart' as http;
@@ -37,10 +42,20 @@ class HeadersApiInterceptor implements InterceptorContract {
 @singleton
 class RestClient {
 
-  RestClient();
+  var _httpClient;
+
+  RestClient() {
+    _httpClient = InterceptedClient.build(interceptors: [HeadersApiInterceptor()]);
+  }
+
+  RestClient.withInterceptors(List<InterceptorContract> interceptors) {
+    // El interceptor con los encabezados sobre JSON se añade si no está incluido en la lista
+    if (interceptors.where((element) => element is HeadersApiInterceptor).isEmpty) interceptors..add(HeadersApiInterceptor());
+    _httpClient = InterceptedClient.build(interceptors: interceptors);
+  }
 
   //final _httpClient = http.Client();
-  final _httpClient = InterceptedClient.build(interceptors: [HeadersApiInterceptor()]);
+  
 
 
   Future<dynamic> get(String url) async {
@@ -70,8 +85,11 @@ class RestClient {
         var responseJson = _response(response);
         return responseJson;
 
-    } on SocketException catch(ex) {
+    /*} on SocketException catch(ex) {
       throw FetchDataException('No internet connection: ${ex.message}');
+    }*/
+    } on Exception catch(ex) {
+      throw ex;
     }
 
   }
@@ -88,7 +106,12 @@ class RestClient {
       case 400:
         throw BadRequestException(utf8.decode(response.bodyBytes));
       case 401:
-        throw AuthenticationException(utf8.decode(response.bodyBytes));
+        // Así sacamos el mensaje del JSON devuelto por el API
+        //String message = jsonDecode(utf8.decode(response.bodyBytes))['message'];
+        //throw AuthenticationException(message);
+
+        // Así devolvemos un mensaje "genérico"
+        throw AuthenticationException("You have entered an invalid username or password");
       case 403:
         throw UnauthorizedException(utf8.decode(response.bodyBytes));
       case 404:
@@ -105,13 +128,13 @@ class RestClient {
 // ignore_for_file: annotate_overrides
 
 class CustomException implements Exception {
-  final _message;
+  final message;
   final _prefix;
 
-  CustomException([this._message, this._prefix]);
+  CustomException([this.message, this._prefix]);
 
   String toString() {
-    return "$_prefix$_message";
+    return "$_prefix$message";
   }
 }
 
@@ -135,4 +158,53 @@ class UnauthorizedException extends CustomException {
 
 class NotFoundException extends CustomException {
   NotFoundException([message]) : super(message, "");
+}
+
+
+
+class AuthorizationInterceptor implements InterceptorContract {
+
+  late LocalStorageService _localStorageService;
+
+  AuthorizationInterceptor() {
+    //_localStorageService = getIt<LocalStorageService>();
+    GetIt.I.getAsync<LocalStorageService>().then((value) => _localStorageService = value);
+
+  }
+
+
+  @override
+  Future<RequestData> interceptRequest({required RequestData data}) async {
+
+    try {
+      var token = await _localStorageService.getFromDisk("user_token"); 
+      data.headers["Authorization"] = "Bearer " + token;  
+    } catch(e) {
+      print(e);
+    }
+
+    return Future.value(data);
+
+  }
+
+  @override
+  Future<ResponseData> interceptResponse({required ResponseData data}) async {
+    
+    if (data.statusCode == 401 || data.statusCode == 403) {
+      Future.delayed(Duration(seconds: 1), () {
+        Navigator.of(GlobalContext.ctx).push<void>(MyApp.route());
+      });
+    }
+    
+    
+    return Future.value(data);
+  }
+
+}
+@Order(-10)
+@singleton
+class RestAuthenticatedClient extends RestClient {
+
+  RestAuthenticatedClient() : super.withInterceptors(List.of(<InterceptorContract>[AuthorizationInterceptor()]));
+
 }

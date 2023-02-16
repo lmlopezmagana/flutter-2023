@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc_authentication/rest/rest_client.dart';
 import 'login_event.dart';
 import 'login_state.dart';
 import '../authentication/authentication.dart';
@@ -35,8 +36,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     } on AuthenticationException catch (e) {
       emit(LoginFailure(error: e.message));
-    } on Exception catch (err) {
-      emit(LoginFailure(error:'An unknown error occurred ${err.toString()}'));
+    } on CustomException catch (err) {
+      emit(LoginFailure(error:'An unknown error occurred ${err.message}'));
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc_authentication/rest/rest_client.dart';
 
 import 'authentication_event.dart';
 import 'authentication_state.dart';
@@ -14,6 +15,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
           on<AppLoaded>(_onAppLoaded);
           on<UserLoggedIn>(_onUserLoggedIn);
           on<UserLoggedOut>(_onUserLoggedOut);
+          on<SessionExpiredEvent>(_onSessionExpired);
         }
 
 
@@ -31,6 +33,9 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
         } else {
           emit(AuthenticationNotAuthenticated());
         }
+      } on UnauthorizedException catch (e) {
+        print(e);
+        emit(AuthenticationNotAuthenticated());  
       } on Exception catch (e) {
         emit(AuthenticationFailure(message: 'An unknown error occurred: ${e.toString()}'));
       }
@@ -49,6 +54,16 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
   ) async {
     await _authenticationService.signOut();
     emit(AuthenticationNotAuthenticated());
+  }
+
+  _onSessionExpired(
+    SessionExpiredEvent event,
+    Emitter<AuthenticationState> emit,
+  ) async {
+    //emit(AuthenticationFailure(message: 'An unknown error occurred: ${e.toString()}'));
+    print("sesión expirada");
+    await _authenticationService.signOut();
+    emit(SessionExpiredState());
   }
 
 }
